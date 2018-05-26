@@ -1,0 +1,36 @@
+class Scoreboard : ZilchComponent
+{
+  [Property]
+  var CurrentFactorPath : CogPath = CogPath();
+  
+  var CurrentFactorSpriteText : SpriteText;
+  
+  
+  function Initialize(init : CogInitializer)
+  {
+    this.CurrentFactorSpriteText = this.CurrentFactorPath.SpriteText;
+    this.CurrentFactorSpriteText.Text = "2";
+    
+    Zero.Connect(this.GameSession, Events.CurrentFactorChanged, this.OnCurrentFactorChanged);
+    Zero.Connect(this.GameSession, Events.DivisionSucceeded, this.OnDivisionSucceeded);
+    Zero.Connect(this.GameSession, Events.DivisionFailed, this.OnDivisionFailed);
+  }
+  
+  
+  function OnCurrentFactorChanged(event : FactorEvent)
+  {
+    this.CurrentFactorSpriteText.Text = "`event.NewFactor`";
+  }
+  
+  
+  function OnDivisionSucceeded(event : NumberEvent)
+  {
+    
+  }
+  
+  
+  function OnDivisionFailed(event : NumberEvent)
+  {
+    
+  }
+}

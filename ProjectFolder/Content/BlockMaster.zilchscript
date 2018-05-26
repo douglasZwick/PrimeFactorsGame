@@ -1,0 +1,98 @@
+class BlockMaster : ZilchComponent
+{
+  [Dependency]
+  var Transform : Transform;
+  
+  
+  [Property]
+  var BlockArchetype : Archetype = Archetype.NumberBlock;
+  [Property]
+  var Size : Integer2 = Integer2(8, 8);
+  [Property]
+  var MaxBlocks : Integer = 20;
+  [Property]
+  var NumberMin : Integer = 2;
+  [Property]
+  var NumberMax : Integer = 9999;
+  [Property][Slider(0, 1, 0.05)]
+  var GapLikelihood : Real = 0.25;
+  
+  var RNG : RandomContext;
+  
+  
+  function Initialize(init : CogInitializer)
+  {
+    this.RNG = this.GameSession.RandomContext;
+    
+    this.GapLikelihood = Math.Clamp(this.GapLikelihood, 0, 0.99);
+    
+    var originX = -(this.Size.X + 1) / 2.0;
+    var originY = (this.Size.Y) / 2.0;
+    var originZ = 0.0;
+    var origin = Real3(originX, originY, originZ) + this.Transform.WorldTranslation;
+    
+    var column = 0;
+    var row = 0;
+    var minDigits = Math.NumberOfDigits(this.NumberMin);
+    var maxDigits = Math.NumberOfDigits(this.NumberMax);
+    
+    for (var i = 0; i < this.MaxBlocks; ++i)
+    {
+      var r = this.RNG.Real();
+      var shouldSkip = r <= this.GapLikelihood;
+      if (shouldSkip)
+      {
+        ++column;
+        --i;
+        continue;
+      }
+      
+      var numberOfDigits = this.RNG.DieRoll(1 + maxDigits - minDigits) + minDigits - 1;
+      
+      if (column + numberOfDigits > this.Size.X)
+      {
+        ++row;
+        
+        if (row >= this.Size.Y)
+          break;
+        
+        column = 0;
+      }
+      
+      var min = 10 ^ (numberOfDigits - 1);
+      var max = 10 * min - 1;
+      
+      if (numberOfDigits == minDigits)
+        min = this.NumberMin;
+      if (numberOfDigits == maxDigits)
+        max = this.NumberMax;
+      
+      var number = this.RNG.Range(min, max) as Integer;
+      
+      var shift = (numberOfDigits - 1) / 2.0;
+      var x = column + 0.5 + shift;
+      var y = -row - 0.5;
+      var z = 0.0;
+      var offset = Real3(x, y, z);
+      
+      var blockPosition = origin + offset;
+      
+      var block = this.Space.CreateAtPosition(this.BlockArchetype, blockPosition);
+      block.NumberBlock.InitializeNumber(number);
+      
+      column += numberOfDigits;
+    }
+  }
+  
+  
+  [Extension(typeid(Math))][Static]
+  function NumberOfDigits(value : Integer) : Integer
+  {
+    if (value == 0)
+      return 1;
+    if (value < 0)
+      value = -value;
+    
+    return Math.Floor(Math.Log10(value)) as Integer + 1;
+  }
+}

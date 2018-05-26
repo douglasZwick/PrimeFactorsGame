@@ -1,0 +1,8 @@
+[Version:1]
+ContentLibrary 
+{
+	var Name = "PrimeFactorsPrototype"
+	var LibraryId = 0x5a9dc98708b343fb
+	var SourceControlType = ""
+	var ReadOnly = false
+}

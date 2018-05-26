@@ -1,0 +1,132 @@
+class MouseMaster : ZilchComponent
+{
+  sends CurrentFactorChanged : FactorEvent;
+  
+  
+  var CurrentFactor : Integer = 2;
+  
+  var MinFactor : Integer = 2;
+  var MaxFactor : Integer = 10000;
+  
+  var Primes : Array[Integer];
+  var PrimeIndex : Integer = 0;
+  
+  
+  function Initialize(init : CogInitializer)
+  {
+    this.BuildPrimeArray();
+    
+    Zero.Connect(this.Space, Events.MouseScroll, this.OnMouseScroll);
+    Zero.Connect(this.Space, Events.LeftMouseDown, this.OnLeftMouseDown);
+    Zero.Connect(this.Space, Events.RightMouseDown, this.OnRightMouseDown);
+  }
+  
+  
+  function OnLeftMouseDown(event : ViewportMouseEvent)
+  {
+    var ne = NumberEvent();
+    ne.Divisor = this.CurrentFactor;
+    event.HitObject.DispatchEvent(Events.DivisionAttempt, ne);
+  }
+  
+  
+  function OnRightMouseDown(event : ViewportMouseEvent)
+  {
+    event.HitObject.DispatchEvent(Events.PrimeAttempt, NumberEvent());
+  }
+  
+  
+  function OnMouseScroll(event : ViewportMouseEvent)
+  {
+    var oldFactor = this.CurrentFactor;
+    
+    var shift = event.ShiftPressed;
+    var ctrl = event.CtrlPressed;
+    
+    if      (!shift && !ctrl)
+    {
+      this.PrimeIndex +=    1 * event.Scroll.Y as Integer;
+    }
+    else if (shift && !ctrl)
+    {
+      this.PrimeIndex +=   10 * event.Scroll.Y as Integer;
+    }
+    else if (!shift && ctrl)
+    {
+      this.PrimeIndex +=  100 * event.Scroll.Y as Integer;
+    }
+    else // (shift && ctrl)
+    {
+      this.PrimeIndex += 1000 * event.Scroll.Y as Integer;
+    }
+    
+    this.PrimeIndex = Math.Clamp(this.PrimeIndex, 0, this.Primes.LastIndex);
+    this.CurrentFactor = this.Primes[this.PrimeIndex];
+    var newFactor = this.CurrentFactor;
+    
+    if (newFactor != oldFactor)
+    {
+      var fe = FactorEvent();
+      fe.NewFactor = newFactor;
+      fe.OldFactor = oldFactor;
+      this.GameSession.DispatchEvent(Events.CurrentFactorChanged, fe);
+    }
+  }
+  
+  
+  function BuildPrimeArray()
+  {
+    // "prime" the array hahahahahahahahahaha
+    // of course, for larger and larger N, this becomes less and less relevant
+    this.Primes = Array[Integer]()
+    {
+      2, 3, 5, 7, 11, 13, 17, 19,
+      23, 29, 31, 37, 41, 43, 47,
+      53, 59, 61, 67, 71, 73, 79,
+      83, 89, 97,
+    };
+    
+    // the currentCandidate starts just past the end of our current array.
+    // of course no even number is prime, so we can add two instead of adding one
+    for (var currentCandidate = this.Primes[this.Primes.LastIndex] + 2; currentCandidate <= this.MaxFactor; currentCandidate += 2)
+    {
+      // you only need to go as far as the currentCandidate's square root. the current quotient
+      // converges on this as we go, so we never actually have to call Math.Sqrt
+      var currentSqrt = Integer.PositiveMax;
+      var isPrime = false;
+      
+      // check each prime we have in the array so far
+      for (var primeIndex = 1; primeIndex < this.Primes.Count; ++primeIndex)
+      {
+        var prime = this.Primes[primeIndex];
+        
+        // if it's greater than our latest quotient, aka our currentSqrt,
+        if (prime > currentSqrt)
+        {
+          // then we're done and it's prime
+          isPrime = true;
+          break;
+        }
+        
+        var remainder = currentCandidate % prime;
+        
+        // if the currentCandidate is divisible by anything, then it's not prime,
+        // but we only need to check primes, so that saves time
+        if (remainder == 0)
+          break;
+        else
+          currentSqrt = currentCandidate / prime;
+      }
+      
+      if (isPrime)
+        this.Primes.Add(currentCandidate);
+    }
+  }
+}
+
+
+class FactorEvent : ZilchEvent
+{
+  var NewFactor : Integer;
+  var OldFactor : Integer;
+}

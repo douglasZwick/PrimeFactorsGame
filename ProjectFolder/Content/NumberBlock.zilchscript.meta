@@ -1,0 +1,9 @@
+[Version:1]
+TextContent 
+{
+	ZilchScriptBuilder 
+	{
+		var Name = "NumberBlock"
+		var ResourceId = 0x5a9dcbf8d41a00d7
+	}
+}

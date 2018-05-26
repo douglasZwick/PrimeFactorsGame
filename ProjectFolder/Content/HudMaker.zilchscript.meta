@@ -1,0 +1,9 @@
+[Version:1]
+TextContent 
+{
+	ZilchScriptBuilder 
+	{
+		var Name = "HudMaker"
+		var ResourceId = 0x5b688d6a65c5e98c
+	}
+}

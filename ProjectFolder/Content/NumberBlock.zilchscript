@@ -1,0 +1,218 @@
+[RunInEditor]
+class NumberBlock : ZilchComponent
+{
+  sends DivisionAttempt : NumberEvent;
+  sends PrimeAttempt : NumberEvent;
+  sends DivisionSucceeded : NumberEvent;
+  sends DivisionFailed : NumberEvent;
+  
+  
+  [Dependency]
+  var BoxCollider : BoxCollider;
+  
+  
+  [Serialize]
+  var Number_ : Integer = 0;
+  [Display]
+  var Number : Integer
+  {
+    get { return this.Number_; }
+    
+    set
+    {
+      this.Number_ = value;
+      
+      var numberOfDigits = Math.NumberOfDigits(value);
+      var width = numberOfDigits as Real;
+      
+      if (this.BoxCollider != null)
+      {
+        var size = this.BoxCollider.Size;
+        size.X = width;
+        this.BoxCollider.Size = size;
+      }
+      if (this.Area != null)
+      {
+        var size = this.Area.Size;
+        size.X = width;
+        this.Area.Size = size;
+      }
+      if (this.Sprite != null)
+      {
+        var clampedNumberOfDigits = Math.Clamp(numberOfDigits, 0, 6);
+        this.DefaultColor = this.DigitColors[clampedNumberOfDigits];
+        this.HoverColor = this.DefaultColor;
+        this.HoverColor.XYZ *= 0.7;
+        this.Sprite.VertexColor = this.DefaultColor;
+      }
+      
+      this.NumberSequence.Cancel();
+      this.NumberSequence = Action.Sequence(this.Owner.Actions);
+        
+        Action.Property(this.NumberSequence, @this.DisplayNumber, value, this.NumberChangeDuration, Ease.Linear);
+    }
+  }
+  
+  var DisplayNumber_ : Integer = 0;
+  var DisplayNumber : Integer
+  {
+    get { return this.DisplayNumber_; }
+    
+    set
+    {
+      this.DisplayNumber_ = value;
+      
+      if (this.SpriteText != null)
+      {
+        this.SpriteText.Text = "`value`";
+      }
+    }
+  }
+  
+  [Property]
+  var SpriteTextPath : CogPath = CogPath();
+  [Property]
+  var SpritePath : CogPath = CogPath();
+  
+  var SpriteText : SpriteText;
+  var Sprite : Sprite;
+  var Area : Area;
+  var ColorSequence : ActionSequence;
+  var ColorChangeDuration : Real = 0.05;
+  var OriginalNumber : Integer;
+  var NumberSequence : ActionSequence;
+  var NumberChangeDuration : Real = 0.5;
+  var DefaultColor : Real4;
+  var HoverColor : Real4;
+  
+  var DigitColors : Array[Real4] = Array[Real4]()
+  {
+    Colors.Black,                       // 0-digit numbers (error case)
+    Color.FromHsva(0.56, 0.9, 0.7, 1),  // 1-digit numbers
+    Color.FromHsva(0.42, 0.9, 0.7, 1),  // 2-digit numbers
+    Color.FromHsva(0.15, 0.9, 0.8, 1),  // 3-digit numbers
+    Color.FromHsva(0.07, 0.8, 0.9, 1),  // 4-digit numbers
+    Color.FromHsva(0.97, 0.9, 0.8, 1),  // 5-digit numbers
+    Color.FromHsva(0.81, 0.9, 0.7, 1),  // 6-digit numbers
+  };
+  
+  var CanDivide : Boolean { get { return this.NumberSequence.Completed || !this.NumberSequence.Started; }}
+  
+  
+  function Initialize(init : CogInitializer)
+  {
+    this.SpriteText = this.SpriteTextPath.SpriteText;
+    this.Sprite = this.SpritePath.Sprite;
+    this.Area = this.SpritePath.Area;
+    
+    this.ColorSequence = Action.Sequence(this.Owner.Actions);
+    this.NumberSequence = Action.Sequence(this.Owner.Actions);
+    
+    Zero.Connect(this.Owner, Events.DivisionAttempt, this.OnDivisionAttempt);
+    Zero.Connect(this.Owner, Events.PrimeAttempt, this.OnPrimeAttempt);
+    Zero.Connect(this.Owner, Events.MouseEnter, this.OnMouseEnter);
+    Zero.Connect(this.Owner, Events.MouseExit, this.OnMouseExit);
+  }
+  
+  
+  function OnDivisionAttempt(event : NumberEvent)
+  {
+    this.AttemptDivide(event.Divisor);
+  }
+  
+  
+  function OnPrimeAttempt(event : NumberEvent)
+  {
+    if (Math.IsPrime(this.Number_))
+      this.AttemptDivide(this.Number_);
+  }
+  
+  
+  function OnMouseEnter(event : ViewportMouseEvent)
+  {
+    this.ColorSequence.Cancel();
+    this.ColorSequence = Action.Sequence(this.Owner.Actions);
+      
+      Action.Property(this.ColorSequence, @this.Sprite.VertexColor, this.HoverColor, this.ColorChangeDuration, Ease.QuadOut);
+    
+    event.Mouse.Cursor = Cursor.Hand;
+  }
+  
+  
+  function OnMouseExit(event : ViewportMouseEvent)
+  {
+    this.ColorSequence.Cancel();
+    this.ColorSequence = Action.Sequence(this.Owner.Actions);
+      
+      Action.Property(this.ColorSequence, @this.Sprite.VertexColor, this.DefaultColor, this.ColorChangeDuration, Ease.QuadOut);
+    
+    event.Mouse.Cursor = Cursor.Arrow;
+  }
+  
+  
+  function InitializeNumber(number : Integer)
+  {
+    this.Number = number;
+    this.OriginalNumber = number;
+  }
+  
+  
+  function AttemptDivide(divisor : Integer)
+  {
+    if (this.CanDivide)
+      this.Divide(divisor);
+  }
+  
+  
+  function Divide(divisor : Integer)
+  {
+    var ne = NumberEvent();
+    ne.OriginalNumber = this.OriginalNumber;
+    ne.OldNumber = this.Number;
+    
+    ne.Quotient = this.Number / divisor;
+    ne.QuotientReal = this.Number as Real / divisor;
+    ne.Remainder = this.Number % divisor;
+    
+    if (ne.Remainder == 0)
+    {
+      this.Number = ne.Quotient;
+      ne.NewNumber = ne.Quotient;
+      this.GameSession.DispatchEvent(Events.DivisionSucceeded, ne);
+    }
+    else
+    {
+      this.GameSession.DispatchEvent(Events.DivisionFailed, ne);
+    }
+  }
+  
+  
+  [Extension(typeid(Math))][Static]
+  function IsPrime(number : Integer) : Boolean
+  {
+    if (number < 2) return false;
+    if (number == 2) return true;
+    if (number % 2 == 0) return false;
+    
+    var sqrt = Math.Sqrt(number);
+    
+    for (var i = 3; i <= sqrt; i += 2)
+    {
+      if (number % i == 0) return false;
+    }
+    
+    return true;
+  }
+}
+
+
+class NumberEvent : ZilchEvent
+{
+  var Divisor : Integer;
+  var OriginalNumber : Integer;
+  var OldNumber : Integer;
+  var NewNumber : Integer;
+  var Quotient : Integer;
+  var QuotientReal : Real;
+  var Remainder : Integer;
+}
