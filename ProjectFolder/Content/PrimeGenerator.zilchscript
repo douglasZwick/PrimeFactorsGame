@@ -6,42 +6,64 @@ class PrimeGenerator : ZilchComponent
   var LogGenerationToConsole : Boolean = false;
   [Property]
   var OutputFormat : PrimeOutputFormat = PrimeOutputFormat.Binary;
+  [Property]
+  var OutputFileName : String = "Prime Array";
+  [Property]
+  var BinaryExtension : String = ".binaryData";
+  [Property]
+  var ZilchExtension : String = ".txt";
   
-  var Primes : Array[Integer] = Array[Integer]()
+  var PatienceCutoff : Integer = 9999;
+  
+  
+  function Initialize(init : CogInitializer)
   {
-    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
-  };
+    if (this.Primes == null)
+    {
+      if (this.OutputFormat == PrimeOutputFormat.Binary)
+      {
+        this.ReadBinaryArrayFromFile();
+      }
+      else
+      {
+        if (this.Max <= this.PatienceCutoff)
+          this.Generate();
+        else
+          throw Exception("Screw that!");
+      }
+    }
+  }
   
   
   [Display]
   function Generate()
   {
-    this.WriteBinaryArrayToFile();
-    
-    //timeout (300)
-    //{
-    //  this.BuildArray();
+    timeout (300)
+    {
+      this.BuildArray();
       
-    //  if (this.OutputFormat == PrimeOutputFormat.Zilch)
-    //    this.WriteZilchArrayToFile();
+      if (this.OutputFormat == PrimeOutputFormat.Zilch)
+        this.WriteZilchArrayToFile();
       
-    //  Console.WriteLine("`this.Primes.Count` primes generated");
-    //}
+      Console.WriteLine("`this.Primes.Count` primes generated");
+    }
   }
   
   
   function BuildArray()
   {
+    // "prime" the array hahahahahahahahahaha
+    this.Primes = Array[Integer]() { 2, 3, 5, };
+    
     var fileStream : FileStream = null;
     
     if (this.OutputFormat == PrimeOutputFormat.Binary)
     {
-      fileStream = FileStream("`FilePath.UserDocumentsDirectory`Prime Array.binaryData", FileMode.Write);
+      fileStream = FileStream("`FilePath.UserDocumentsDirectory``this.OutputFileName``this.BinaryExtension`", FileMode.Write);
       
+      foreach (var prime in this.Primes)
+        fileStream.WriteInteger(prime);
     }
-    
-    // "prime" the array hahahahahahahahahaha
-    this.Primes = Array[Integer]() { 2, 3, 5, };
     
     // the currentCandidate starts just past the end of our current array.
     // of course no even number is prime, so we can add two instead of adding one
@@ -90,6 +112,9 @@ class PrimeGenerator : ZilchComponent
       {
         this.Log("  `currentCandidate` is prime.");
         this.Primes.Add(currentCandidate);
+        
+        if (this.OutputFormat == PrimeOutputFormat.Binary)
+          fileStream.WriteInteger(currentCandidate);
       }
     }
     
@@ -100,25 +125,9 @@ class PrimeGenerator : ZilchComponent
   }
   
   
-  function WriteBinaryArrayToFile()
-  {
-    var fileStream = FileStream("`FilePath.UserDocumentsDirectory`Test File.binaryData", FileMode.Write);
-    
-    this.WriteInteger(10, fileStream);
-    this.WriteInteger(13, fileStream);
-    
-    fileStream.Close();
-    
-    var readStream = FileStream("`FilePath.UserDocumentsDirectory`Test File.binaryData", FileMode.Read);
-    Console.WriteLine(this.ReadInteger(readStream));
-    Console.WriteLine(this.ReadInteger(readStream));
-    readStream.Close();
-  }
-  
-  
   function WriteZilchArrayToFile()
   {
-    var fileStream = FileStream("`FilePath.UserDocumentsDirectory`Prime Array.txt", FileMode.Write);
+    var fileStream = FileStream("`FilePath.UserDocumentsDirectory``this.OutputFileName``this.ZilchExtension`", FileMode.Write);
     
     fileStream.WriteText("  var Primes : Array[Integer] = Array[Integer]()\n");
     fileStream.WriteText("  {\n");
@@ -153,41 +162,48 @@ class PrimeGenerator : ZilchComponent
   }
   
   
+  function ReadBinaryArrayFromFile()
+  {
+    // TODO:
+    // 
+    // make this take multiple frames, so that i can have a loading icon or something
+    
+    var fileStream = FileStream("`FilePath.UserDocumentsDirectory``this.OutputFileName``this.BinaryExtension`", FileMode.Read);
+    
+    if (fileStream == null)
+    {
+      if (this.Max <= this.PatienceCutoff)
+      {
+        this.Generate();
+        
+        return;
+      }
+      else
+      {
+        throw Exception("Screw that!");
+      }
+    }
+    
+    this.Primes = Array[Integer]();
+    
+    var primeCount = fileStream.Count / 4;
+    
+    for (var i = 0; i < primeCount; ++i)
+      this.Primes.Add(fileStream.ReadInteger());
+    
+    Console.WriteLine("`primeCount` primes read");
+    
+    fileStream.Close();
+  }
+  
+  
   function Log(message : any)
   {
     if (this.LogGenerationToConsole) Console.WriteLine(message);
   }
   
   
-  function WriteInteger(value : Integer, stream : FileStream)
-  {
-    var mask0 = 255 << 24;  // 0xff000000
-    var mask1 = 255 << 16;  // 0x00ff0000
-    var mask2 = 255 <<  8;  // 0x0000ff00
-    var mask3 = 255 <<  0;  // 0x000000ff
-    var byte0 = ((value & mask0) >> 24) as Byte;
-    var byte1 = ((value & mask1) >> 16) as Byte;
-    var byte2 = ((value & mask2) >>  8) as Byte;
-    var byte3 = ((value & mask3) >>  0) as Byte;
-    stream.WriteByte(byte0);
-    stream.WriteByte(byte1);
-    stream.WriteByte(byte2);
-    stream.WriteByte(byte3);
-  }
-  
-  
-  function ReadInteger(stream : FileStream) : Integer
-  {
-    var byte0 = stream.ReadByte();
-    var byte1 = stream.ReadByte();
-    var byte2 = stream.ReadByte();
-    var byte3 = stream.ReadByte();
-    var part0 = byte0 << 24;
-    var part1 = byte1 << 16;
-    var part2 = byte2 <<  8;
-    var part3 = byte3 <<  0;
-    return part0 | part1 | part2 | part3;
-  }
+  var Primes : Array[Integer];
 }
 
 

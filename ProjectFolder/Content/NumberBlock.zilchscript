@@ -176,9 +176,17 @@ class NumberBlock : ZilchComponent
     
     if (ne.Remainder == 0)
     {
-      this.Number = ne.Quotient;
       ne.NewNumber = ne.Quotient;
       this.GameSession.DispatchEvent(Events.DivisionSucceeded, ne);
+      
+      if (ne.Quotient == 1)
+      {
+        this.Owner.Destroy();
+      }
+      else
+      {
+        this.Number = ne.Quotient;
+      }
     }
     else
     {

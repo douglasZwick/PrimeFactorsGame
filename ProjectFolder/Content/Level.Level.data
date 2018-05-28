@@ -239,10 +239,10 @@ Level
 		{
 			var BlockArchetype = "5a9dcbfdd5309e62:NumberBlock"
 			var Size = Integer2{16, 16}
-			var MaxBlocks = 99
+			var MaxBlocks = 256
 			var NumberMin = 2
-			var NumberMax = 999999
-			var GapLikelihood = 0.200000003
+			var NumberMax = 9
+			var GapLikelihood = 0
 		}
 	}
 }

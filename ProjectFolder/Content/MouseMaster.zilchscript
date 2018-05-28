@@ -14,7 +14,7 @@ class MouseMaster : ZilchComponent
   
   function Initialize(init : CogInitializer)
   {
-    this.BuildPrimeArray();
+    this.Primes = this.GameSession.PrimeGenerator.Primes;
     
     Zero.Connect(this.Space, Events.MouseScroll, this.OnMouseScroll);
     Zero.Connect(this.Space, Events.LeftMouseDown, this.OnLeftMouseDown);
@@ -36,7 +36,11 @@ class MouseMaster : ZilchComponent
   
   function OnRightMouseDown(event : ViewportMouseEvent)
   {
-    event.HitObject.DispatchEvent(Events.PrimeAttempt, NumberEvent());
+    var hitObject = event.HitObject;
+    
+    if (hitObject == null) return;
+    
+    hitObject.DispatchEvent(Events.PrimeAttempt, NumberEvent());
   }
   
   
@@ -74,56 +78,6 @@ class MouseMaster : ZilchComponent
       fe.NewFactor = newFactor;
       fe.OldFactor = oldFactor;
       this.GameSession.DispatchEvent(Events.CurrentFactorChanged, fe);
-    }
-  }
-  
-  
-  function BuildPrimeArray()
-  {
-    // "prime" the array hahahahahahahahahaha
-    // of course, for larger and larger N, this becomes less and less relevant
-    this.Primes = Array[Integer]()
-    {
-      2, 3, 5, 7, 11, 13, 17, 19,
-      23, 29, 31, 37, 41, 43, 47,
-      53, 59, 61, 67, 71, 73, 79,
-      83, 89, 97,
-    };
-    
-    // the currentCandidate starts just past the end of our current array.
-    // of course no even number is prime, so we can add two instead of adding one
-    for (var currentCandidate = this.Primes[this.Primes.LastIndex] + 2; currentCandidate <= this.MaxFactor; currentCandidate += 2)
-    {
-      // you only need to go as far as the currentCandidate's square root. the current quotient
-      // converges on this as we go, so we never actually have to call Math.Sqrt
-      var currentSqrt = Integer.PositiveMax;
-      var isPrime = false;
-      
-      // check each prime we have in the array so far
-      for (var primeIndex = 1; primeIndex < this.Primes.Count; ++primeIndex)
-      {
-        var prime = this.Primes[primeIndex];
-        
-        // if it's greater than our latest quotient, aka our currentSqrt,
-        if (prime > currentSqrt)
-        {
-          // then we're done and it's prime
-          isPrime = true;
-          break;
-        }
-        
-        var remainder = currentCandidate % prime;
-        
-        // if the currentCandidate is divisible by anything, then it's not prime,
-        // but we only need to check primes, so that saves time
-        if (remainder == 0)
-          break;
-        else
-          currentSqrt = currentCandidate / prime;
-      }
-      
-      if (isPrime)
-        this.Primes.Add(currentCandidate);
     }
   }
 }

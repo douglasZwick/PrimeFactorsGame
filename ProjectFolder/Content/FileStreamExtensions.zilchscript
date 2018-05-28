@@ -1,0 +1,33 @@
+class FileStreamExtensions
+{
+  [Extension(typeid(FileStream))]
+  function ReadInteger() : Integer
+  {
+    var byte0 = this.ReadByte();
+    var byte1 = this.ReadByte();
+    var byte2 = this.ReadByte();
+    var byte3 = this.ReadByte();
+    var part0 = byte0 << 24;
+    var part1 = byte1 << 16;
+    var part2 = byte2 <<  8;
+    var part3 = byte3 <<  0;
+    return part0 | part1 | part2 | part3;
+  }
+  
+  [Extension(typeid(FileStream))]
+  function WriteInteger(value : Integer)
+  {
+    var mask0 = 255 << 24;  // 0xff000000
+    var mask1 = 255 << 16;  // 0x00ff0000
+    var mask2 = 255 <<  8;  // 0x0000ff00
+    var mask3 = 255 <<  0;  // 0x000000ff
+    var byte0 = ((value & mask0) >> 24) as Byte;
+    var byte1 = ((value & mask1) >> 16) as Byte;
+    var byte2 = ((value & mask2) >>  8) as Byte;
+    var byte3 = ((value & mask3) >>  0) as Byte;
+    this.WriteByte(byte0);
+    this.WriteByte(byte1);
+    this.WriteByte(byte2);
+    this.WriteByte(byte3);
+  }
+}

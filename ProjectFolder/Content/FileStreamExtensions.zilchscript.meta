@@ -1,0 +1,9 @@
+[Version:1]
+TextContent 
+{
+	ZilchScriptBuilder 
+	{
+		var Name = "FileStreamExtensions"
+		var ResourceId = 0x5b7707d355fa6a0d
+	}
+}
