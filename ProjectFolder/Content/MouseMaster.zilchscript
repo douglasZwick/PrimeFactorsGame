@@ -24,9 +24,13 @@ class MouseMaster : ZilchComponent
   
   function OnLeftMouseDown(event : ViewportMouseEvent)
   {
+    var hitObject = event.HitObject;
+    
+    if (hitObject == null) return;
+    
     var ne = NumberEvent();
     ne.Divisor = this.CurrentFactor;
-    event.HitObject.DispatchEvent(Events.DivisionAttempt, ne);
+    hitObject.DispatchEvent(Events.DivisionAttempt, ne);
   }
   
   

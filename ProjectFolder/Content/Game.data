@@ -37,6 +37,11 @@ GameSession
 	RandomContext 
 	{
 		var RandomSeed = true
-		var Seed = 3515234560
+		var Seed = 1867920197
+	}
+	PrimeGenerator 
+	{
+		var Max = 999999
+		var LogGenerationToConsole = false
 	}
 }
